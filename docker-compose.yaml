@@ -1,0 +1,44 @@
+services:
+  subscriptions_service:
+    build:
+      dockerfile: ./build/package/Dockerfile
+      context: .
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres:17.4-alpine3.21
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5431:${POSTGRES_PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "8081:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
